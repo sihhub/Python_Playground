@@ -89,3 +89,6 @@ coverage.xml
 
 # macOS system files
 .DS_Store
+
+
+uploads/
