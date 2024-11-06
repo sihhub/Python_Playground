@@ -15,6 +15,7 @@ async def xml_to_html(
     file: Optional[UploadFile] = File(None),
     text: Optional[str] = Form(None),
 ):
+    print("xml_to_html", file, text)
     try:
         if file is not None:
             xml_text = await file.read()
