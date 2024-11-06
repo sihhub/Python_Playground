@@ -2,6 +2,8 @@ from fastapi import APIRouter, FastAPI, File, Form, HTTPException, UploadFile, D
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from routes import xml_to_html_router  # routes 폴더에서 불러온 라우트 사용
+
 app = FastAPI(
     docs_url="/docs",
     openapi_url="/openapi.json",
@@ -26,6 +28,4 @@ async def root():
     return {"message": "Welcome to the Fast Convert API!"}
 
 
-@app.get("/xml-to-html", tags=["XML,HTML"], summary="XML to HTML")
-async def xml_to_html():
-    return {"message": "XML to HTML"}
+app.include_router(xml_to_html_router, prefix="/xml-to-html", tags=["XML, HTML"])
