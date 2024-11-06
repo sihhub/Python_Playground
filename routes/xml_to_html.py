@@ -1,31 +1,57 @@
+import io
 import os
+import re
+import zipfile
 from typing import Optional
-
 from fastapi import APIRouter, FastAPI, File, Form, HTTPException, UploadFile, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from saxonche import PySaxonApiError, PySaxonProcessor
-
 from tools import get_error_details
 from pathlib import Path
 
 
 router = APIRouter()
 
+STYLESHEET_DIR = Path(__file__).parent.parent / "stylesheets"
+STYLESHEET_DIR.mkdir(parents=True, exist_ok=True)
+UPLOAD_XML_DIR = Path(__file__).parent.parent / "uploads" / "xml"
+UPLOAD_XML_DIR.mkdir(parents=True, exist_ok=True)
+
+HOST = "http://127.0.0.1:8000"
+
+# <link rel="stylesheet" type="text/css" href="isosts.css" />
+
 
 @router.post("/", summary="XML to HTML")
-async def xml_to_html(
-    file: Optional[UploadFile] = File(None),
-    text: Optional[str] = Form(None),
-):
+async def xml_to_html(zip_file: UploadFile = File(...)):
     try:
-        if file is not None:
-            xml_text = await file.read()
-            xml_text = xml_text.decode("utf-8")
-        elif text is not None:
-            xml_text = text
-        else:
-            raise HTTPException(status_code=400, detail="No file or text provided")
+
+        upload_dir = UPLOAD_XML_DIR / zip_file.filename.rsplit(".", 1)[0]
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        xml_text = None
+
+        with zipfile.ZipFile(io.BytesIO(await zip_file.read())) as z:
+            for file_path in z.namelist():
+                if file_path.endswith(".xml"):
+                    with z.open(file_path) as f:
+                        xml_text = f.read().decode("utf-8")
+                        xml_path = upload_dir / file_path
+
+                        with open(xml_path, "w") as xml_out:
+                            xml_out.write(xml_text)
+                elif file_path.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
+                    with z.open(file_path) as image_file:
+                        image_path = upload_dir / file_path
+
+                        with open(image_path, "wb") as img_out:
+                            img_out.write(image_file.read())
+
+            if xml_text is None:
+                raise HTTPException(status_code=400, detail="No XML file found in zip")
+
         html_string = convert(xml_text)
+
         return HTMLResponse(
             status_code=201,
             content=html_string,
@@ -38,12 +64,7 @@ async def xml_to_html(
 
 
 def convert(xml_text: str) -> str:
-    xsl_file = str(
-        Path(__file__).parent.parent
-        / "assets"
-        / "templates"
-        / "isosts2html_standalone.xsl"
-    )
+    xsl_file = str(STYLESHEET_DIR / "isosts2html_standalone.xsl")
 
     # 경로가 올바른지 로그로 출력
     print(f"Using XSL file at: {xsl_file}")
