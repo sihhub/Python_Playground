@@ -26,7 +26,8 @@ HOST = "http://127.0.0.1:8000"
 async def xml_to_html(zip_file: UploadFile = File(...)):
     try:
 
-        upload_dir = UPLOAD_XML_DIR / zip_file.filename.rsplit(".", 1)[0]
+        zip_file_name = zip_file.filename.rsplit(".", 1)[0]
+        upload_dir = UPLOAD_XML_DIR / zip_file_name
         upload_dir.mkdir(parents=True, exist_ok=True)
 
         xml_text = None
@@ -59,6 +60,8 @@ async def xml_to_html(zip_file: UploadFile = File(...)):
 
         html_string = convert(xml_text)
 
+        html_string = update_html_paths(html_string, zip_file_name)
+
         return HTMLResponse(
             status_code=201,
             content=html_string,
@@ -85,3 +88,21 @@ def convert(xml_text: str) -> str:
         document = proc.parse_xml(xml_text=xml_text)
         executable = xslt_proc.compile_stylesheet(stylesheet_file=xsl_file)
         return executable.transform_to_string(xdm_node=document)
+
+
+def update_html_paths(html_string: str, zip_file_name: str) -> str:
+    """
+    HTML 문자열 내 이미지와 CSS 경로를 업데이트합니다.
+    """
+    html_string = html_string.replace(
+        'src="', f'src="{HOST}/uploads/xml/{zip_file_name}/'
+    )
+
+    css_url = f"{HOST}/stylesheets/isosts.css"
+
+    html_string = html_string.replace(
+        '<link rel="stylesheet" type="text/css" href="isosts.css" />',
+        f'<link rel="stylesheet" type="text/css" href="{css_url}" />',
+    )
+
+    return html_string
