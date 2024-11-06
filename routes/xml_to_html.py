@@ -33,16 +33,23 @@ async def xml_to_html(zip_file: UploadFile = File(...)):
 
         with zipfile.ZipFile(io.BytesIO(await zip_file.read())) as z:
             for file_path in z.namelist():
+                # __MACOSX 폴더 및 ._로 시작하는 파일 무시
+                if file_path.startswith("__MACOSX") or file_path.startswith("._"):
+                    continue
+
                 if file_path.endswith(".xml"):
                     with z.open(file_path) as f:
+
                         xml_text = f.read().decode("utf-8")
-                        xml_path = upload_dir / file_path
+                        file_name = Path(file_path).name
+                        xml_path = upload_dir / file_name
 
                         with open(xml_path, "w") as xml_out:
                             xml_out.write(xml_text)
                 elif file_path.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
                     with z.open(file_path) as image_file:
-                        image_path = upload_dir / file_path
+                        file_name = Path(file_path).name
+                        image_path = upload_dir / file_name
 
                         with open(image_path, "wb") as img_out:
                             img_out.write(image_file.read())
