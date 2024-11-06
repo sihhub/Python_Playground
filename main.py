@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from routes import xml_to_html_router  # routes 폴더에서 불러온 라우트 사용
+from pathlib import Path
 
 app = FastAPI(
     docs_url="/docs",
