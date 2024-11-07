@@ -61,10 +61,12 @@ async def xml_to_html(zip_file: UploadFile = File(...)):
         html_string = convert(xml_text)
 
         html_string = update_html_paths(html_string, zip_file_name)
-
-        return HTMLResponse(
+        return JSONResponse(
             status_code=201,
-            content=html_string,
+            content={
+                "xml_text": xml_text,
+                "html_string": html_string,
+            },
         )
 
     except PySaxonApiError as e:
